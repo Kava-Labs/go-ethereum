@@ -14,6 +14,14 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
+      name: "ExampleCalc",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ExampleCalc__factory>;
+    getContractFactory(
+      name: "ICalc",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ICalc__factory>;
+    getContractFactory(
       name: "ExampleSHA256",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ExampleSHA256__factory>;
@@ -27,6 +35,16 @@ declare module "hardhat/types/runtime" {
     ): Promise<Contracts.Lock__factory>;
 
     getContractAt(
+      name: "ExampleCalc",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ExampleCalc>;
+    getContractAt(
+      name: "ICalc",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ICalc>;
+    getContractAt(
       name: "ExampleSHA256",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -43,6 +61,14 @@ declare module "hardhat/types/runtime" {
     ): Promise<Contracts.Lock>;
 
     deployContract(
+      name: "ExampleCalc",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ExampleCalc>;
+    deployContract(
+      name: "ICalc",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ICalc>;
+    deployContract(
       name: "ExampleSHA256",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ExampleSHA256>;
@@ -55,6 +81,16 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Lock>;
 
+    deployContract(
+      name: "ExampleCalc",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ExampleCalc>;
+    deployContract(
+      name: "ICalc",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ICalc>;
     deployContract(
       name: "ExampleSHA256",
       args: any[],

@@ -5,7 +5,6 @@
 package contract
 
 import (
-	"github.com/ava-labs/avalanchego/snow"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/precompile/precompileconfig"
 	"math/big"
@@ -55,9 +54,9 @@ type StateDB interface {
 // AccessibleState defines the interface exposed to stateful precompile contracts
 type AccessibleState interface {
 	GetStateDB() StateDB
-	GetBlockContext() BlockContext
-	GetSnowContext() *snow.Context
-	GetChainConfig() precompileconfig.ChainConfig
+	//GetBlockContext() BlockContext
+	//GetSnowContext() *snow.Context
+	//GetChainConfig() precompileconfig.ChainConfig
 }
 
 // ConfigurationBlockContext defines the interface required to configure a precompile.

@@ -17,6 +17,10 @@
 package vm
 
 import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/precompile/contract"
+	"github.com/ethereum/go-ethereum/precompile/modules"
 	"math/big"
 	"sync/atomic"
 
@@ -37,8 +41,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 )
 
-func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
-	var precompiles map[common.Address]PrecompiledContract
+func (evm *EVM) precompile(addr common.Address) (contract.StatefulPrecompiledContract, bool) {
+	var precompiles map[common.Address]contract.StatefulPrecompiledContract
 	switch {
 	case evm.chainRules.IsCancun:
 		precompiles = PrecompiledContractsCancun
@@ -51,8 +55,28 @@ func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 	default:
 		precompiles = PrecompiledContractsHomestead
 	}
+
+	// Check the existing precompiles first
 	p, ok := precompiles[addr]
-	return p, ok
+	if ok {
+		return p, true
+	}
+
+	registeredModules := modules.RegisteredModules()
+	for _, module := range registeredModules {
+		if module.Address == addr {
+			module, ok := modules.GetPrecompileModuleByAddress(addr)
+			return module.Contract, ok
+		}
+	}
+
+	//// Otherwise, check the chain rules for the additionally configured precompiles.
+	//if _, ok = evm.chainRules.ActivePrecompiles[addr]; ok {
+	//	module, ok := modules.GetPrecompileModuleByAddress(addr)
+	//	return module.Contract, ok
+	//}
+
+	return nil, false
 }
 
 // BlockContext provides the EVM with auxiliary information. Once provided
@@ -167,6 +191,21 @@ func (evm *EVM) Cancelled() bool {
 	return evm.abort.Load()
 }
 
+// GetSnowContext returns the evm's snow.Context.
+//func (evm *EVM) GetSnowContext() *snow.Context {
+//	return evm.chainConfig.SnowCtx
+//}
+
+// GetStateDB returns the evm's StateDB
+func (evm *EVM) GetStateDB() contract.StateDB {
+	return evm.StateDB
+}
+
+// GetBlockContext returns the evm's BlockContext
+//func (evm *EVM) GetBlockContext() contract.BlockContext {
+//	return &evm.Context
+//}
+
 // Interpreter returns the current interpreter
 func (evm *EVM) Interpreter() *EVMInterpreter {
 	return evm.interpreter
@@ -177,6 +216,8 @@ func (evm *EVM) Interpreter() *EVMInterpreter {
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
 func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+	log.Info("YEVHENII: evm.Call was called")
+
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
@@ -186,7 +227,9 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
+	log.Info(fmt.Sprintf("YEVHENII: addr: %v", addr))
 	p, isPrecompile := evm.precompile(addr)
+	log.Info(fmt.Sprintf("YEVHENII: isPrecompile: %v", isPrecompile))
 	debug := evm.Config.Tracer != nil
 
 	if !evm.StateDB.Exist(addr) {
@@ -224,7 +267,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	}
 
 	if isPrecompile {
-		ret, gas, err = RunPrecompiledContract(p, input, gas)
+		ret, gas, err = RunStatefulPrecompiledContract(p, evm, caller.Address(), addr, input, gas, evm.interpreter.readOnly)
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
