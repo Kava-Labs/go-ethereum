@@ -81,6 +81,26 @@ func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 	return append(method.ID, arguments...), nil
 }
 
+// getInputs gets input arguments of the given [name] method.
+func (abi ABI) getInputs(name string, data []byte, useStrictMode bool) (Arguments, error) {
+	// since there can't be naming collisions with contracts and events,
+	// we need to decide whether we're calling a method or an event
+	var args Arguments
+	if method, ok := abi.Methods[name]; ok {
+		if useStrictMode && len(data)%32 != 0 {
+			return nil, fmt.Errorf("abi: improperly formatted input: %s - Bytes: [%+v]", string(data), data)
+		}
+		args = method.Inputs
+	}
+	if event, ok := abi.Events[name]; ok {
+		args = event.Inputs
+	}
+	if args == nil {
+		return nil, fmt.Errorf("abi: could not locate named method or event: %s", name)
+	}
+	return args, nil
+}
+
 func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 	// since there can't be naming collisions with contracts and events,
 	// we need to decide whether we're calling a method or an event
@@ -98,6 +118,15 @@ func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 		return nil, fmt.Errorf("abi: could not locate named method or event: %s", name)
 	}
 	return args, nil
+}
+
+// UnpackInput unpacks the input according to the ABI specification.
+func (abi ABI) UnpackInput(name string, data []byte, useStrictMode bool) ([]interface{}, error) {
+	args, err := abi.getInputs(name, data, useStrictMode)
+	if err != nil {
+		return nil, err
+	}
+	return args.Unpack(data)
 }
 
 // Unpack unpacks the output according to the abi specification.
