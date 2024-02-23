@@ -81,7 +81,13 @@ func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 	return append(method.ID, arguments...), nil
 }
 
-// getInputs gets input arguments of the given [name] method.
+// Upstream implementation provides API for `pack inputs` and `unpack outputs`.
+// We extend API with `unpack inputs` functionality by adding getInputs and UnpackInput methods.
+// Perhaps in the future we extend API with `pack outputs` functionality.
+
+// getInputs gets method's inputs metadata by method name according to the ABI specification.
+// It can be used to decode encoded method's inputs.
+// getInputs and getArguments have similar implementations
 func (abi ABI) getInputs(name string, data []byte, useStrictMode bool) (Arguments, error) {
 	// since there can't be naming collisions with contracts and events,
 	// we need to decide whether we're calling a method or an event
@@ -101,6 +107,9 @@ func (abi ABI) getInputs(name string, data []byte, useStrictMode bool) (Argument
 	return args, nil
 }
 
+// getArguments gets method's outputs metadata by method name according to the ABI specification.
+// It can be used to decode encoded method's outputs.
+// getInputs and getArguments have similar implementations.
 func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 	// since there can't be naming collisions with contracts and events,
 	// we need to decide whether we're calling a method or an event
@@ -121,6 +130,7 @@ func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 }
 
 // UnpackInput unpacks the input according to the ABI specification.
+// UnpackInput and Unpack have similar implementations.
 func (abi ABI) UnpackInput(name string, data []byte, useStrictMode bool) ([]interface{}, error) {
 	args, err := abi.getInputs(name, data, useStrictMode)
 	if err != nil {
@@ -129,7 +139,8 @@ func (abi ABI) UnpackInput(name string, data []byte, useStrictMode bool) ([]inte
 	return args.Unpack(data)
 }
 
-// Unpack unpacks the output according to the abi specification.
+// Unpack unpacks the output according to the ABI specification.
+// UnpackInput and Unpack have similar implementations.
 func (abi ABI) Unpack(name string, data []byte) ([]interface{}, error) {
 	args, err := abi.getArguments(name, data)
 	if err != nil {
