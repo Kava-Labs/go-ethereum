@@ -17,12 +17,10 @@
 package vm
 
 import (
-	"context"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/precompile/contract"
 )
 
 // StateDB is an EVM database for full state querying.
@@ -76,9 +74,6 @@ type StateDB interface {
 	AddPreimage(common.Hash, []byte)
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
-
-	Context() context.Context
-	IBCTransfer(goCtx context.Context, msg *contract.MsgTransfer) (*contract.MsgTransferResponse, error)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

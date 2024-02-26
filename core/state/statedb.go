@@ -18,7 +18,6 @@
 package state
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -32,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/precompile/contract"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 )
@@ -1057,12 +1055,4 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
-}
-
-func (s *StateDB) Context() context.Context {
-	return context.Background()
-}
-
-func (s *StateDB) IBCTransfer(goCtx context.Context, msg *contract.MsgTransfer) (*contract.MsgTransferResponse, error) {
-	return nil, errors.New("not implemented")
 }

@@ -5,10 +5,7 @@
 package contract
 
 import (
-	"context"
 	"math/big"
-
-	sdkmath "cosmossdk.io/math"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -83,63 +80,4 @@ type StateDB interface {
 	AddPreimage(common.Hash, []byte)
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
-
-	Context() context.Context
-	IBCTransfer(goCtx context.Context, msg *MsgTransfer) (*MsgTransferResponse, error)
-}
-
-// MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
-// ICS20 enabled chains. See ICS Spec here:
-// https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
-type MsgTransfer struct {
-	// the port on which the packet will be sent
-	SourcePort string
-	// the channel by which the packet will be sent
-	SourceChannel string
-	// the tokens to be transferred
-	Token Coin
-	// the sender address
-	Sender string
-	// the recipient address on the destination chain
-	Receiver string
-	// Timeout height relative to the current block height.
-	// The timeout is disabled when set to 0.
-	TimeoutHeight Height
-	// Timeout timestamp in absolute nanoseconds since unix epoch.
-	// The timeout is disabled when set to 0.
-	TimeoutTimestamp uint64
-	// optional memo
-	Memo string
-}
-
-// Coin defines a token with a denomination and an amount.
-//
-// NOTE: The amount field is an Int which implements the custom method
-// signatures required by gogoproto.
-type Coin struct {
-	Denom  string      `protobuf:"bytes,1,opt,name=denom,proto3" json:"denom,omitempty"`
-	Amount sdkmath.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=Int" json:"amount"`
-}
-
-// Height is a monotonically increasing data type
-// that can be compared against another Height for the purposes of updating and
-// freezing clients
-//
-// Normally the RevisionHeight is incremented at each height while keeping
-// RevisionNumber the same. However some consensus algorithms may choose to
-// reset the height in certain conditions e.g. hard forks, state-machine
-// breaking changes In these cases, the RevisionNumber is incremented so that
-// height continues to be monitonically increasing even as the RevisionHeight
-// gets reset
-type Height struct {
-	// the revision that the client is currently on
-	RevisionNumber uint64
-	// the height within the given revision
-	RevisionHeight uint64
-}
-
-// MsgTransferResponse defines the Msg/Transfer response type.
-type MsgTransferResponse struct {
-	// sequence number of the transfer packet sent
-	Sequence uint64
 }
