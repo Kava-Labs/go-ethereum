@@ -1,3 +1,8 @@
+// Copyright 2024 Kava Labs, Inc.
+// Copyright 2024 Ava Labs, Inc.
+//
+// Derived from https://github.com/ava-labs/subnet-evm@49b0e31
+//
 // Copyright 2015 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
@@ -88,14 +93,11 @@ func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 // getInputs gets method's inputs metadata by method name according to the ABI specification.
 // It can be used to decode encoded method's inputs.
 // getInputs and getArguments have similar implementations
-func (abi ABI) getInputs(name string, data []byte, useStrictMode bool) (Arguments, error) {
+func (abi ABI) getInputs(name string) (Arguments, error) {
 	// since there can't be naming collisions with contracts and events,
 	// we need to decide whether we're calling a method or an event
 	var args Arguments
 	if method, ok := abi.Methods[name]; ok {
-		if useStrictMode && len(data)%32 != 0 {
-			return nil, fmt.Errorf("abi: improperly formatted input: %s - Bytes: [%+v]", string(data), data)
-		}
 		args = method.Inputs
 	}
 	if event, ok := abi.Events[name]; ok {
@@ -131,8 +133,8 @@ func (abi ABI) getArguments(name string, data []byte) (Arguments, error) {
 
 // UnpackInput unpacks the input according to the ABI specification.
 // UnpackInput and Unpack have similar implementations.
-func (abi ABI) UnpackInput(name string, data []byte, useStrictMode bool) ([]interface{}, error) {
-	args, err := abi.getInputs(name, data, useStrictMode)
+func (abi ABI) UnpackInput(name string, data []byte) ([]interface{}, error) {
+	args, err := abi.getInputs(name)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +149,21 @@ func (abi ABI) Unpack(name string, data []byte) ([]interface{}, error) {
 		return nil, err
 	}
 	return args.Unpack(data)
+}
+
+// UnpackInputIntoInterface unpacks the input in v according to the ABI specification.
+// It performs an additional copy. Please only use, if you want to unpack into a
+// structure that does not strictly conform to the ABI structure (e.g. has additional arguments)
+func (abi ABI) UnpackInputIntoInterface(v interface{}, name string, data []byte) error {
+	args, err := abi.getInputs(name)
+	if err != nil {
+		return err
+	}
+	unpacked, err := args.Unpack(data)
+	if err != nil {
+		return err
+	}
+	return args.Copy(v, unpacked)
 }
 
 // UnpackIntoInterface unpacks the output in v according to the abi specification.
