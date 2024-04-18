@@ -106,6 +106,9 @@ func TestActivePrecompiles(t *testing.T) {
 		Address:  contractAddress,
 		Contract: new(mockStatefulPrecompiledContract),
 	}
+
+	// TODO: should we allow dynamic registration to update ActivePrecompiles?
+	// Or should we enforce registration only at init?
 	err := modules.RegisterModule(module)
 	require.NoError(t, err, "could not register precompile for test")
 
