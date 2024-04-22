@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/precompile/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -98,6 +99,67 @@ func TestRegisterModuleWithDuplicateAddress(t *testing.T) {
 	// get all modules
 	registeredModules := RegisteredModules()
 	require.Equal(t, modules, registeredModules)
+}
+
+func TestRegisterIsEnabled(t *testing.T) {
+	clearRegisteredModules()
+
+	manager := testutil.NewManager()
+	modules := []Module{
+		{
+			Address: common.BigToAddress(big.NewInt(0)),
+		},
+		{
+			Address: common.BigToAddress(big.NewInt(1)),
+		},
+		{
+			Address: common.BigToAddress(big.NewInt(3)),
+		},
+	}
+	for _, module := range modules {
+		err := RegisterModule(module)
+		require.NoError(t, err, "expected no error when registering module for test")
+	}
+
+	// default is all modules enabled
+	enabledModules := RegisteredModules()
+	require.Equal(t, modules, enabledModules)
+	for _, module := range modules {
+		_, ok := GetPrecompileModuleByAddress(module.Address)
+		require.True(t, ok, "expected precompile %s to be enabled", module.Address)
+	}
+
+	// set manager with no enabled modules
+	SetPrecompileManager(manager)
+	enabledModules = RegisteredModules()
+	require.Equal(t, 0, len(enabledModules), "expected no registered modules ot be enabled")
+	for _, module := range modules {
+		_, ok := GetPrecompileModuleByAddress(module.Address)
+		require.False(t, ok, "expected precompile %s to not enabled", module.Address)
+	}
+
+	// enable and test sorting is as expected
+	manager.Enable(modules[0].Address)
+	enabledModules = RegisteredModules()
+	require.Equal(t, modules[:1], enabledModules, "expected one enabled precompile module")
+	module, enabled := GetPrecompileModuleByAddress(modules[0].Address)
+	require.Equal(t, modules[0], module, "expected module to be returned")
+	require.True(t, enabled, "expected module to be enabled")
+
+	// enable and test sorting is as expected
+	manager.Enable(modules[2].Address)
+	enabledModules = RegisteredModules()
+	require.Equal(t, []Module{modules[0], modules[2]}, enabledModules, "expected two enabled precompile modules")
+	module, enabled = GetPrecompileModuleByAddress(modules[2].Address)
+	require.Equal(t, modules[2], module, "expected module to be returned")
+	require.True(t, enabled, "expected module to be enabled")
+
+	// test that disable works
+	manager.Disable(modules[0].Address)
+	enabledModules = RegisteredModules()
+	require.Equal(t, modules[2:], enabledModules, "expected one enabled precompile modules")
+	_, enabled = GetPrecompileModuleByAddress(modules[0].Address)
+	require.False(t, enabled, "expected module to not be enabled")
 }
 
 func clearRegisteredModules() {
