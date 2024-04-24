@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/precompile/modules"
 )
 
 var loopInterruptTests = []string{
@@ -48,7 +49,7 @@ func TestLoopInterrupt(t *testing.T) {
 		statedb.SetCode(address, common.Hex2Bytes(tt))
 		statedb.Finalise(true)
 
-		evm := NewEVM(vmctx, TxContext{}, statedb, params.AllEthashProtocolChanges, Config{})
+		evm := NewEVM(vmctx, TxContext{}, statedb, params.AllEthashProtocolChanges, Config{}, modules.NewDefaultManager())
 
 		errChannel := make(chan error)
 		timeout := make(chan bool)

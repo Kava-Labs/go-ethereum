@@ -65,6 +65,9 @@ func (evm *EVM) precompile(addr common.Address) (contract.StatefulPrecompiledCon
 	if !ok {
 		return nil, false
 	}
+	if !evm.precompileMgr.IsEnabled(addr) {
+		return nil, false
+	}
 
 	return module.Contract, true
 }
@@ -135,11 +138,13 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
+
+	precompileMgr modules.Manager
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config, precompileMgr modules.Manager) *EVM {
 	// If basefee tracking is disabled (eth_call, eth_estimateGas, etc), and no
 	// gas prices were specified, lower the basefee to 0 to avoid breaking EVM
 	// invariants (basefee < feecap)
@@ -152,12 +157,13 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 		}
 	}
 	evm := &EVM{
-		Context:     blockCtx,
-		TxContext:   txCtx,
-		StateDB:     statedb,
-		Config:      config,
-		chainConfig: chainConfig,
-		chainRules:  chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time),
+		Context:       blockCtx,
+		TxContext:     txCtx,
+		StateDB:       statedb,
+		Config:        config,
+		chainConfig:   chainConfig,
+		chainRules:    chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time),
+		precompileMgr: precompileMgr,
 	}
 	evm.interpreter = NewEVMInterpreter(evm)
 	return evm

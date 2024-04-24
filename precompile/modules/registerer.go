@@ -10,6 +10,20 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type Manager interface {
+	IsEnabled(address common.Address) bool
+}
+
+type defaultManager struct{}
+
+func NewDefaultManager() Manager {
+	return &defaultManager{}
+}
+
+func (_ *defaultManager) IsEnabled(_ common.Address) bool {
+	return true
+}
+
 var (
 	// registeredModules is a list of Module to preserve order
 	// for deterministic iteration
@@ -47,4 +61,8 @@ func insertSortedByAddress(data []Module, stm Module) []Module {
 	data = append(data, stm)
 	sort.Sort(moduleArray(data))
 	return data
+}
+
+func ClearRegisteredModules() {
+	registeredModules = make([]Module, 0)
 }
