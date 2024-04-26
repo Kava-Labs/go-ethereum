@@ -34,7 +34,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/precompile/contract"
-	"github.com/ethereum/go-ethereum/precompile/modules"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -131,6 +130,14 @@ var (
 	PrecompiledAddressesIstanbul  []common.Address
 	PrecompiledAddressesByzantium []common.Address
 	PrecompiledAddressesHomestead []common.Address
+
+	PrecompiledAddressesKava16 = []common.Address{
+		common.HexToAddress("0x16"),
+	}
+	PrecompiledAddressesKava17 = []common.Address{
+		common.HexToAddress("0x16"),
+		common.HexToAddress("0x17"),
+	}
 )
 
 func init() {
@@ -167,12 +174,15 @@ func ActivePrecompiles(rules params.Rules) (precompiles []common.Address) {
 		precompiles = PrecompiledAddressesHomestead
 	}
 
-	// TODO: Consider performance improvements here to prevent iteration & allocations on every call.
-	// NOTE: If using init to cache addresses, then some care should be taken to ensure all precompiles are
-	// registered before being cached here.
-	for _, precompile := range modules.RegisteredModules() {
-		precompiles = append(precompiles, precompile.Address)
+	// TODO: Consider performance improvements here
+	kavaPrecompiles := make([]common.Address, 0)
+	switch {
+	case rules.IsKava16:
+		kavaPrecompiles = PrecompiledAddressesKava16
+	case rules.IsKava17:
+		kavaPrecompiles = PrecompiledAddressesKava17
 	}
+	precompiles = append(precompiles, kavaPrecompiles...)
 
 	return precompiles
 }

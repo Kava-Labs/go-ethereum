@@ -54,6 +54,8 @@ var (
 		LondonBlock:                   big.NewInt(12_965_000),
 		ArrowGlacierBlock:             big.NewInt(13_773_000),
 		GrayGlacierBlock:              big.NewInt(15_050_000),
+		Kava16Block:                   big.NewInt(9_561_866),
+		Kava17Block:                   big.NewInt(10_000_000),
 		TerminalTotalDifficulty:       MainnetTerminalTotalDifficulty, // 58_750_000_000_000_000_000_000
 		TerminalTotalDifficultyPassed: true,
 		ShanghaiTime:                  newUint64(1681338455),
@@ -307,6 +309,8 @@ type ChainConfig struct {
 	MuirGlacierBlock    *big.Int `json:"muirGlacierBlock,omitempty"`    // Eip-2384 (bomb delay) switch block (nil = no fork, 0 = already activated)
 	BerlinBlock         *big.Int `json:"berlinBlock,omitempty"`         // Berlin switch block (nil = no fork, 0 = already on berlin)
 	LondonBlock         *big.Int `json:"londonBlock,omitempty"`         // London switch block (nil = no fork, 0 = already on london)
+	Kava16Block         *big.Int `json:"kava16Block,omitempty"`         // Kava16Block switch block (nil = no fork, 0 = already on kava16)
+	Kava17Block         *big.Int `json:"kava17Block,omitempty"`         // Kava17Block switch block (nil = no fork, 0 = already on kava17)
 	ArrowGlacierBlock   *big.Int `json:"arrowGlacierBlock,omitempty"`   // Eip-4345 (bomb delay) switch block (nil = no fork, 0 = already activated)
 	GrayGlacierBlock    *big.Int `json:"grayGlacierBlock,omitempty"`    // Eip-5133 (bomb delay) switch block (nil = no fork, 0 = already activated)
 	MergeNetsplitBlock  *big.Int `json:"mergeNetsplitBlock,omitempty"`  // Virtual fork after The Merge to use as a network splitter
@@ -541,6 +545,16 @@ func (c *ChainConfig) IsPrague(num *big.Int, time uint64) bool {
 // IsVerkle returns whether num is either equal to the Verkle fork time or greater.
 func (c *ChainConfig) IsVerkle(num *big.Int, time uint64) bool {
 	return c.IsLondon(num) && isTimestampForked(c.VerkleTime, time)
+}
+
+// IsKava16 returns whether num is either equal to the Kava16 fork block or greater.
+func (c *ChainConfig) IsKava16(num *big.Int) bool {
+	return isBlockForked(c.Kava16Block, num)
+}
+
+// IsKava17 returns whether num is either equal to the Kava17 fork block or greater.
+func (c *ChainConfig) IsKava17(num *big.Int) bool {
+	return isBlockForked(c.Kava17Block, num)
 }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
@@ -850,6 +864,8 @@ type Rules struct {
 	IsBerlin, IsLondon                                      bool
 	IsMerge, IsShanghai, IsCancun, IsPrague                 bool
 	IsVerkle                                                bool
+
+	IsKava16, IsKava17 bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -875,5 +891,7 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsCancun:         c.IsCancun(num, timestamp),
 		IsPrague:         c.IsPrague(num, timestamp),
 		IsVerkle:         c.IsVerkle(num, timestamp),
+		IsKava16:         c.IsKava16(num),
+		IsKava17:         c.IsKava17(num),
 	}
 }
