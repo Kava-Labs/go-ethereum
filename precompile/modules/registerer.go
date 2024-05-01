@@ -35,7 +35,7 @@ func RegisterModule(stm Module) error {
 // GetPrecompileModuleByAddress returns a precompile module by address and true
 // if found. Otherwise, it returns false. Uses binary search to find the module,
 // as the list is sorted by address.
-func SearchPrecompileModuleByAddress(address common.Address) (Module, bool) {
+func GetPrecompileModuleByAddress(address common.Address) (Module, bool) {
 	idx, found := slices.BinarySearchFunc(registeredModules, Module{
 		Address: address,
 	}, func(a, b Module) int {
@@ -47,15 +47,6 @@ func SearchPrecompileModuleByAddress(address common.Address) (Module, bool) {
 	}
 
 	return registeredModules[idx], true
-}
-
-func GetPrecompileModuleByAddress(address common.Address) (Module, bool) {
-	for _, stm := range registeredModules {
-		if stm.Address == address {
-			return stm, true
-		}
-	}
-	return Module{}, false
 }
 
 func RegisteredModules() []Module {
