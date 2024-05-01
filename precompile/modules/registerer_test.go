@@ -79,6 +79,59 @@ func TestRegisterModule(t *testing.T) {
 	require.Equal(t, modules, registeredModules)
 }
 
+const benchmarkModuleCount = 1000
+
+func setupBenchmark(b *testing.B) {
+	ClearRegisteredModules()
+
+	// create modules
+	modules := make([]Module, benchmarkModuleCount)
+	for i := 0; i < benchmarkModuleCount; i++ {
+		modules[i] = Module{
+			Address: common.BigToAddress(big.NewInt(int64(i))),
+		}
+	}
+
+	// register modules
+	for i := 0; i < benchmarkModuleCount; i++ {
+		err := RegisterModule(modules[i])
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkGetPrecompileModuleByAddress(b *testing.B) {
+	setupBenchmark(b)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		address := common.BigToAddress(big.NewInt(int64(i % benchmarkModuleCount)))
+		module, found := GetPrecompileModuleByAddress(address)
+		require.True(b, found)
+		require.Equal(b, address, module.Address)
+	}
+}
+
+func getPrecompileModuleByAddress_linear(address common.Address) (Module, bool) {
+	for _, stm := range registeredModules {
+		if stm.Address == address {
+			return stm, true
+		}
+	}
+	return Module{}, false
+}
+
+func BenchmarkGetPrecompileModuleByAddress_linear(b *testing.B) {
+	setupBenchmark(b)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		address := common.BigToAddress(big.NewInt(int64(i % benchmarkModuleCount)))
+		module, found := getPrecompileModuleByAddress_linear(address)
+		require.True(b, found)
+		require.Equal(b, address, module.Address)
+	}
+}
+
 func TestRegisterModuleWithDuplicateAddress(t *testing.T) {
 	ClearRegisteredModules()
 
