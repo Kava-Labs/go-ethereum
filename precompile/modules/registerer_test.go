@@ -105,8 +105,9 @@ func BenchmarkGetPrecompileModuleByAddress(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		address := common.BigToAddress(big.NewInt(int64(i % benchmarkModuleCount)))
-		_, found := GetPrecompileModuleByAddress(address)
+		module, found := GetPrecompileModuleByAddress(address)
 		require.True(b, found)
+		require.Equal(b, address, module.Address)
 	}
 }
 
@@ -119,14 +120,15 @@ func getPrecompileModuleByAddress_linear(address common.Address) (Module, bool) 
 	return Module{}, false
 }
 
-func BenchmarkGetPrecompileModuleByAddress_binarySearch(b *testing.B) {
+func BenchmarkGetPrecompileModuleByAddress_linear(b *testing.B) {
 	setupBenchmark(b)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		address := common.BigToAddress(big.NewInt(int64(i % benchmarkModuleCount)))
-		_, found := getPrecompileModuleByAddress_linear(address)
+		module, found := getPrecompileModuleByAddress_linear(address)
 		require.True(b, found)
+		require.Equal(b, address, module.Address)
 	}
 }
 
