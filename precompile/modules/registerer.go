@@ -4,7 +4,9 @@
 package modules
 
 import (
+	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +30,23 @@ func RegisterModule(stm Module) error {
 	// sort by address to ensure deterministic iteration
 	registeredModules = insertSortedByAddress(registeredModules, stm)
 	return nil
+}
+
+// GetPrecompileModuleByAddress returns a precompile module by address and true
+// if found. Otherwise, it returns false. Uses binary search to find the module,
+// as the list is sorted by address.
+func SearchPrecompileModuleByAddress(address common.Address) (Module, bool) {
+	idx, found := slices.BinarySearchFunc(registeredModules, Module{
+		Address: address,
+	}, func(a, b Module) int {
+		return bytes.Compare(a.Address.Bytes(), b.Address.Bytes())
+	})
+
+	if !found {
+		return Module{}, false
+	}
+
+	return registeredModules[idx], true
 }
 
 func GetPrecompileModuleByAddress(address common.Address) (Module, bool) {
