@@ -13,6 +13,15 @@ const (
 	SelectorLen = 4
 )
 
+type callType int
+
+const (
+	call callType = iota
+	callCode
+	delegateCall
+	staticCall
+)
+
 type RunStatefulPrecompileFunc func(
 	accessibleState AccessibleState,
 	caller common.Address,
