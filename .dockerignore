@@ -5,4 +5,3 @@ build/_bin
 tests/testdata
 
 vendor
-contracts/node_modules
