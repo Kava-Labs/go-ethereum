@@ -30,6 +30,9 @@ import (
 	"github.com/holiman/uint256"
 )
 
+// PrecompiledContracts defines a map of address -> precompiled contract
+type PrecompiledContracts map[common.Address]PrecompiledContract
+
 type (
 	// CanTransferFunc is the signature of a transfer guard function
 	CanTransferFunc func(StateDB, common.Address, *big.Int) bool
@@ -150,7 +153,7 @@ type EVM struct {
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config, customPrecompiles PrecompiledContracts) *EVM {
 	return NewEVMWithEnabledPrecompiles(blockCtx, txCtx, statedb, chainConfig, config, nil)
 }
 
