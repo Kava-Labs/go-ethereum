@@ -700,7 +700,7 @@ func (s *Server) JSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 // wrapHandler returns an httprouter.Handle which wraps an http.HandlerFunc by
-// populating request.Context with any objects from the URL params
+// populating request.context with any objects from the URL params
 func (s *Server) wrapHandler(handler http.HandlerFunc) httprouter.Handle {
 	return func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")

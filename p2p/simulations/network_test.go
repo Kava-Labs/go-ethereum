@@ -854,17 +854,17 @@ func casesNodeUnmarshalJSONConfigField() []nodeUnmarshalTestCase {
 	// handle it's own serialization. Just do a sanity check.
 	return []nodeUnmarshalTestCase{
 		{
-			name:      "Config field is omitted",
+			name:      "config field is omitted",
 			marshaled: "{}",
 			want:      newNode(nil, nil, false),
 		},
 		{
-			name:      "Config field is nil",
+			name:      "config field is nil",
 			marshaled: "{\"config\": null}",
 			want:      newNode(nil, nil, false),
 		},
 		{
-			name:      "a non default Config field",
+			name:      "a non default config field",
 			marshaled: "{\"config\":{\"name\":\"node_ecdd0\",\"port\":44665}}",
 			want:      newNode(nil, &adapters.NodeConfig{Name: "node_ecdd0", Port: 44665}, false),
 		},

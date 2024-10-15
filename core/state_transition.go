@@ -240,7 +240,7 @@ func (st *StateTransition) buyGas() error {
 		balanceCheck = balanceCheck.Mul(balanceCheck, st.msg.GasFeeCap)
 		balanceCheck.Add(balanceCheck, st.msg.Value)
 	}
-	if st.evm.ChainConfig().IsCancun(st.evm.Context.BlockNumber, st.evm.Context.Time) {
+	if st.evm.ChainConfig().IsCancun(st.evm.Context().BlockNumber, st.evm.Context().Time) {
 		if blobGas := st.blobGasUsed(); blobGas > 0 {
 			// Check that the user has enough funds to cover blobGasUsed * tx.BlobGasFeeCap
 			blobBalanceCheck := new(big.Int).SetUint64(blobGas)
@@ -248,7 +248,7 @@ func (st *StateTransition) buyGas() error {
 			balanceCheck.Add(balanceCheck, blobBalanceCheck)
 			// Pay for blobGasUsed * actual blob fee
 			blobFee := new(big.Int).SetUint64(blobGas)
-			blobFee.Mul(blobFee, st.evm.Context.BlobBaseFee)
+			blobFee.Mul(blobFee, st.evm.Context().BlobBaseFee)
 			mgval.Add(mgval, blobFee)
 		}
 	}
@@ -289,9 +289,9 @@ func (st *StateTransition) preCheck() error {
 		}
 	}
 	// Make sure that transaction gasFeeCap is greater than the baseFee (post london)
-	if st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {
+	if st.evm.ChainConfig().IsLondon(st.evm.Context().BlockNumber) {
 		// Skip the checks if gas fields are zero and baseFee was explicitly disabled (eth_call)
-		skipCheck := st.evm.Config.NoBaseFee && msg.GasFeeCap.BitLen() == 0 && msg.GasTipCap.BitLen() == 0
+		skipCheck := st.evm.Config().NoBaseFee && msg.GasFeeCap.BitLen() == 0 && msg.GasTipCap.BitLen() == 0
 		if !skipCheck {
 			if l := msg.GasFeeCap.BitLen(); l > 256 {
 				return fmt.Errorf("%w: address %v, maxFeePerGas bit length: %d", ErrFeeCapVeryHigh,
@@ -307,9 +307,9 @@ func (st *StateTransition) preCheck() error {
 			}
 			// This will panic if baseFee is nil, but basefee presence is verified
 			// as part of header validation.
-			if msg.GasFeeCap.Cmp(st.evm.Context.BaseFee) < 0 {
+			if msg.GasFeeCap.Cmp(st.evm.Context().BaseFee) < 0 {
 				return fmt.Errorf("%w: address %v, maxFeePerGas: %s, baseFee: %s", ErrFeeCapTooLow,
-					msg.From.Hex(), msg.GasFeeCap, st.evm.Context.BaseFee)
+					msg.From.Hex(), msg.GasFeeCap, st.evm.Context().BaseFee)
 			}
 		}
 	}
@@ -326,16 +326,16 @@ func (st *StateTransition) preCheck() error {
 		}
 	}
 	// Check that the user is paying at least the current blob fee
-	if st.evm.ChainConfig().IsCancun(st.evm.Context.BlockNumber, st.evm.Context.Time) {
+	if st.evm.ChainConfig().IsCancun(st.evm.Context().BlockNumber, st.evm.Context().Time) {
 		if st.blobGasUsed() > 0 {
 			// Skip the checks if gas fields are zero and blobBaseFee was explicitly disabled (eth_call)
-			skipCheck := st.evm.Config.NoBaseFee && msg.BlobGasFeeCap.BitLen() == 0
+			skipCheck := st.evm.Config().NoBaseFee && msg.BlobGasFeeCap.BitLen() == 0
 			if !skipCheck {
 				// This will panic if blobBaseFee is nil, but blobBaseFee presence
 				// is verified as part of header validation.
-				if msg.BlobGasFeeCap.Cmp(st.evm.Context.BlobBaseFee) < 0 {
+				if msg.BlobGasFeeCap.Cmp(st.evm.Context().BlobBaseFee) < 0 {
 					return fmt.Errorf("%w: address %v blobGasFeeCap: %v, blobBaseFee: %v", ErrBlobFeeCapTooLow,
-						msg.From.Hex(), msg.BlobGasFeeCap, st.evm.Context.BlobBaseFee)
+						msg.From.Hex(), msg.BlobGasFeeCap, st.evm.Context().BlobBaseFee)
 				}
 			}
 		}
@@ -369,7 +369,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		return nil, err
 	}
 
-	if tracer := st.evm.Config.Tracer; tracer != nil {
+	if tracer := st.evm.Config().Tracer; tracer != nil {
 		tracer.CaptureTxStart(st.initialGas)
 		defer func() {
 			tracer.CaptureTxEnd(st.gasRemaining)
@@ -379,7 +379,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	var (
 		msg              = st.msg
 		sender           = vm.AccountRef(msg.From)
-		rules            = st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber, st.evm.Context.Random != nil, st.evm.Context.Time)
+		rules            = st.evm.ChainConfig().Rules(st.evm.Context().BlockNumber, st.evm.Context().Random != nil, st.evm.Context().Time)
 		contractCreation = msg.To == nil
 	)
 
@@ -394,7 +394,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	st.gasRemaining -= gas
 
 	// Check clause 6
-	if msg.Value.Sign() > 0 && !st.evm.Context.CanTransfer(st.state, msg.From, msg.Value) {
+	if msg.Value.Sign() > 0 && !st.evm.Context().CanTransfer(st.state, msg.From, msg.Value) {
 		return nil, fmt.Errorf("%w: address %v", ErrInsufficientFundsForTransfer, msg.From.Hex())
 	}
 
@@ -406,7 +406,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// Execute the preparatory steps for state transition which includes:
 	// - prepare accessList(post-berlin)
 	// - reset transient storage(eip 1153)
-	st.state.Prepare(rules, msg.From, st.evm.Context.Coinbase, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
+	st.state.Prepare(rules, msg.From, st.evm.Context().Coinbase, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
 
 	var (
 		ret   []byte
@@ -430,17 +430,17 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	}
 	effectiveTip := msg.GasPrice
 	if rules.IsLondon {
-		effectiveTip = cmath.BigMin(msg.GasTipCap, new(big.Int).Sub(msg.GasFeeCap, st.evm.Context.BaseFee))
+		effectiveTip = cmath.BigMin(msg.GasTipCap, new(big.Int).Sub(msg.GasFeeCap, st.evm.Context().BaseFee))
 	}
 
-	if st.evm.Config.NoBaseFee && msg.GasFeeCap.Sign() == 0 && msg.GasTipCap.Sign() == 0 {
+	if st.evm.Config().NoBaseFee && msg.GasFeeCap.Sign() == 0 && msg.GasTipCap.Sign() == 0 {
 		// Skip fee payment when NoBaseFee is set and the fee fields
 		// are 0. This avoids a negative effectiveTip being applied to
 		// the coinbase when simulating calls.
 	} else {
 		fee := new(big.Int).SetUint64(st.gasUsed())
 		fee.Mul(fee, effectiveTip)
-		st.state.AddBalance(st.evm.Context.Coinbase, fee)
+		st.state.AddBalance(st.evm.Context().Coinbase, fee)
 	}
 
 	return &ExecutionResult{

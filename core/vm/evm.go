@@ -123,9 +123,9 @@ type TxContext struct {
 //
 // The EVM should never be reused and is not thread safe.
 type EVM struct {
-	// Context provides auxiliary blockchain related information
-	Context BlockContext
-	TxContext
+	// context provides auxiliary blockchain related information
+	context   BlockContext
+	txContext TxContext
 	// StateDB gives access to the underlying state
 	StateDB StateDB
 	// Depth is the current call stack
@@ -137,7 +137,7 @@ type EVM struct {
 	chainRules params.Rules
 	// virtual machine configuration options used to initialise the
 	// evm.
-	Config Config
+	config Config
 	// global (to this context) ethereum virtual machine
 	// used throughout the execution of the tx.
 	interpreter *EVMInterpreter
@@ -170,10 +170,10 @@ func NewEVMWithEnabledPrecompiles(blockCtx BlockContext, txCtx TxContext, stated
 		}
 	}
 	evm := &EVM{
-		Context:            blockCtx,
-		TxContext:          txCtx,
+		context:            blockCtx,
+		txContext:          txCtx,
 		StateDB:            statedb,
-		Config:             config,
+		config:             config,
 		chainConfig:        chainConfig,
 		chainRules:         chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Random != nil, blockCtx.Time),
 		enabledPrecompiles: enabledPrecompiles,
@@ -185,7 +185,7 @@ func NewEVMWithEnabledPrecompiles(blockCtx BlockContext, txCtx TxContext, stated
 // Reset resets the EVM with a new transaction context.Reset
 // This is not threadsafe and should only be done very cautiously.
 func (evm *EVM) Reset(txCtx TxContext, statedb StateDB) {
-	evm.TxContext = txCtx
+	evm.txContext = txCtx
 	evm.StateDB = statedb
 }
 
@@ -220,43 +220,52 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-	if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
+	if value.Sign() != 0 && !evm.Context().CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
-	debug := evm.Config.Tracer != nil
+	debug := evm.Config().
+		Tracer != nil
 
 	if !evm.StateDB.Exist(addr) {
 		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
 			// Calling a non existing account, don't do anything, but ping the tracer
 			if debug {
 				if evm.depth == 0 {
-					evm.Config.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
-					evm.Config.Tracer.CaptureEnd(ret, 0, nil)
+					evm.Config().
+						Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
+					evm.Config().
+						Tracer.CaptureEnd(ret, 0, nil)
 				} else {
-					evm.Config.Tracer.CaptureEnter(CALL, caller.Address(), addr, input, gas, value)
-					evm.Config.Tracer.CaptureExit(ret, 0, nil)
+					evm.Config().
+						Tracer.CaptureEnter(CALL, caller.Address(), addr, input, gas, value)
+					evm.Config().
+						Tracer.CaptureExit(ret, 0, nil)
 				}
 			}
 			return nil, gas, nil
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+	evm.Context().Transfer(evm.StateDB, caller.Address(), addr, value)
 
 	// Capture the tracer start/end events in debug mode
 	if debug {
 		if evm.depth == 0 {
-			evm.Config.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
+			evm.Config().
+				Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
 			defer func(startGas uint64) { // Lazy evaluation of the parameters
-				evm.Config.Tracer.CaptureEnd(ret, startGas-gas, err)
+				evm.Config().
+					Tracer.CaptureEnd(ret, startGas-gas, err)
 			}(gas)
 		} else {
 			// Handle tracer events for entering and exiting a call frame
-			evm.Config.Tracer.CaptureEnter(CALL, caller.Address(), addr, input, gas, value)
+			evm.Config().
+				Tracer.CaptureEnter(CALL, caller.Address(), addr, input, gas, value)
 			defer func(startGas uint64) {
-				evm.Config.Tracer.CaptureExit(ret, startGas-gas, err)
+				evm.Config().
+					Tracer.CaptureExit(ret, startGas-gas, err)
 			}(gas)
 		}
 	}
@@ -310,16 +319,18 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	// Note although it's noop to transfer X ether to caller itself. But
 	// if caller doesn't have enough balance, it would be an error to allow
 	// over-charging itself. So the check here is necessary.
-	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
+	if !evm.Context().CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
 	var snapshot = evm.StateDB.Snapshot()
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
-	if evm.Config.Tracer != nil {
-		evm.Config.Tracer.CaptureEnter(CALLCODE, caller.Address(), addr, input, gas, value)
+	if evm.Config().Tracer != nil {
+		evm.Config().
+			Tracer.CaptureEnter(CALLCODE, caller.Address(), addr, input, gas, value)
 		defer func(startGas uint64) {
-			evm.Config.Tracer.CaptureExit(ret, startGas-gas, err)
+			evm.Config().
+				Tracer.CaptureExit(ret, startGas-gas, err)
 		}(gas)
 	}
 
@@ -357,14 +368,16 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	var snapshot = evm.StateDB.Snapshot()
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
-	if evm.Config.Tracer != nil {
+	if evm.Config().Tracer != nil {
 		// NOTE: caller must, at all times be a contract. It should never happen
 		// that caller is something other than a Contract.
 		parent := caller.(*Contract)
 		// DELEGATECALL inherits value from parent call
-		evm.Config.Tracer.CaptureEnter(DELEGATECALL, caller.Address(), addr, input, gas, parent.value)
+		evm.Config().
+			Tracer.CaptureEnter(DELEGATECALL, caller.Address(), addr, input, gas, parent.value)
 		defer func(startGas uint64) {
-			evm.Config.Tracer.CaptureExit(ret, startGas-gas, err)
+			evm.Config().
+				Tracer.CaptureExit(ret, startGas-gas, err)
 		}(gas)
 	}
 
@@ -411,10 +424,12 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	evm.StateDB.AddBalance(addr, big0)
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
-	if evm.Config.Tracer != nil {
-		evm.Config.Tracer.CaptureEnter(STATICCALL, caller.Address(), addr, input, gas, nil)
+	if evm.Config().Tracer != nil {
+		evm.Config().
+			Tracer.CaptureEnter(STATICCALL, caller.Address(), addr, input, gas, nil)
 		defer func(startGas uint64) {
-			evm.Config.Tracer.CaptureExit(ret, startGas-gas, err)
+			evm.Config().
+				Tracer.CaptureExit(ret, startGas-gas, err)
 		}(gas)
 	}
 
@@ -466,7 +481,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, common.Address{}, gas, ErrDepth
 	}
-	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
+	if !evm.Context().CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, common.Address{}, gas, ErrInsufficientBalance
 	}
 	nonce := evm.StateDB.GetNonce(caller.Address())
@@ -490,18 +505,20 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), address, value)
+	evm.Context().Transfer(evm.StateDB, caller.Address(), address, value)
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 	contract := NewContract(caller, AccountRef(address), value, gas)
 	contract.SetCodeOptionalHash(&address, codeAndHash)
 
-	if evm.Config.Tracer != nil {
+	if evm.Config().Tracer != nil {
 		if evm.depth == 0 {
-			evm.Config.Tracer.CaptureStart(evm, caller.Address(), address, true, codeAndHash.code, gas, value)
+			evm.Config().
+				Tracer.CaptureStart(evm, caller.Address(), address, true, codeAndHash.code, gas, value)
 		} else {
-			evm.Config.Tracer.CaptureEnter(typ, caller.Address(), address, codeAndHash.code, gas, value)
+			evm.Config().
+				Tracer.CaptureEnter(typ, caller.Address(), address, codeAndHash.code, gas, value)
 		}
 	}
 
@@ -540,11 +557,13 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		}
 	}
 
-	if evm.Config.Tracer != nil {
+	if evm.Config().Tracer != nil {
 		if evm.depth == 0 {
-			evm.Config.Tracer.CaptureEnd(ret, gas-contract.Gas, err)
+			evm.Config().
+				Tracer.CaptureEnd(ret, gas-contract.Gas, err)
 		} else {
-			evm.Config.Tracer.CaptureExit(ret, gas-contract.Gas, err)
+			evm.Config().
+				Tracer.CaptureExit(ret, gas-contract.Gas, err)
 		}
 	}
 	return ret, address, contract.Gas, err
@@ -568,3 +587,34 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 
 // ChainConfig returns the environment's chain configuration
 func (evm *EVM) ChainConfig() *params.ChainConfig { return evm.chainConfig }
+
+// TODO(boodyvo): implement
+
+func (evm *EVM) Config() Config {
+	return evm.config
+}
+
+func (evm *EVM) Context() BlockContext {
+	return evm.context
+}
+
+func (evm *EVM) TxContext() TxContext {
+	return evm.txContext
+}
+
+func (evm *EVM) ActivePrecompiles(rules params.Rules) []common.Address {
+	return nil
+}
+
+func (evm *EVM) Precompile(addr common.Address) (PrecompiledContract, bool) {
+	return nil, false
+}
+
+func (evm *EVM) RunPrecompiledContract(_ StatefulPrecompiledContract, addr common.Address, input []byte, suppliedGas uint64, value *big.Int) (ret []byte, remainingGas uint64, err error) {
+	return nil, 0, nil
+}
+
+type StatefulPrecompiledContract interface {
+	PrecompiledContract
+	RunStateful(evm EVM, addr common.Address, input []byte, value *big.Int) (ret []byte, err error)
+}

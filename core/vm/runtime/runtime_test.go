@@ -470,8 +470,8 @@ func BenchmarkSimpleLoop(b *testing.B) {
 	}
 
 	//tracer := logger.NewJSONLogger(nil, os.Stdout)
-	//Execute(loopingCode, nil, &Config{
-	//	EVMConfig: vm.Config{
+	//Execute(loopingCode, nil, &config{
+	//	EVMConfig: vm.config{
 	//		Debug:  true,
 	//		Tracer: tracer,
 	//	}})

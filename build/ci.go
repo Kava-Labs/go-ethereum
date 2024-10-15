@@ -568,7 +568,7 @@ func doDocker(cmdline []string) {
 				if exec.Command("docker", "pull", img).Run() != nil {
 					continue // Generally the only failure is a missing image, which is good
 				}
-				buildnum, err := exec.Command("docker", "inspect", "--format", "{{index .Config.Labels \"buildnum\"}}", img).CombinedOutput()
+				buildnum, err := exec.Command("docker", "inspect", "--format", "{{index .config.Labels \"buildnum\"}}", img).CombinedOutput()
 				if err != nil {
 					log.Fatalf("Failed to inspect container: %v\nOutput: %s", err, string(buildnum))
 				}
@@ -615,7 +615,7 @@ func doDocker(cmdline []string) {
 							mismatch = true
 							break
 						}
-						buildnum, err := exec.Command("docker", "inspect", "--format", "{{index .Config.Labels \"buildnum\"}}", img).CombinedOutput()
+						buildnum, err := exec.Command("docker", "inspect", "--format", "{{index .config.Labels \"buildnum\"}}", img).CombinedOutput()
 						if err != nil {
 							log.Fatalf("Failed to inspect container: %v\nOutput: %s", err, string(buildnum))
 						}

@@ -163,7 +163,7 @@ func newCallback(receiver, fn reflect.Value) *callback {
 // makeArgTypes composes the argTypes list.
 func (c *callback) makeArgTypes() {
 	fntype := c.fn.Type()
-	// Skip receiver and context.Context parameter (if present).
+	// Skip receiver and context.context parameter (if present).
 	firstArg := 0
 	if c.rcvr.IsValid() {
 		firstArg++
@@ -227,7 +227,7 @@ func isSubscriptionType(t reflect.Type) bool {
 	return t == subscriptionType
 }
 
-// isPubSub tests whether the given method has as as first argument a context.Context and
+// isPubSub tests whether the given method has as as first argument a context.context and
 // returns the pair (Subscription, error).
 func isPubSub(methodType reflect.Type) bool {
 	// numIn(0) is the receiver type

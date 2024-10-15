@@ -244,7 +244,7 @@ func opKeccak256(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) (
 	interpreter.hasher.Read(interpreter.hasherBuf[:])
 
 	evm := interpreter.evm
-	if evm.Config.EnablePreimageRecording {
+	if evm.Config().EnablePreimageRecording {
 		evm.StateDB.AddPreimage(interpreter.hasherBuf, data)
 	}
 
@@ -265,7 +265,7 @@ func opBalance(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 }
 
 func opOrigin(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	scope.Stack.push(new(uint256.Int).SetBytes(interpreter.evm.Origin.Bytes()))
+	scope.Stack.push(new(uint256.Int).SetBytes(interpreter.evm.TxContext().Origin.Bytes()))
 	return nil, nil
 }
 
@@ -427,7 +427,7 @@ func opExtCodeHash(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext)
 }
 
 func opGasprice(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.GasPrice)
+	v, _ := uint256.FromBig(interpreter.evm.TxContext().GasPrice)
 	scope.Stack.push(v)
 	return nil, nil
 }
@@ -440,14 +440,14 @@ func opBlockhash(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) (
 		return nil, nil
 	}
 	var upper, lower uint64
-	upper = interpreter.evm.Context.BlockNumber.Uint64()
+	upper = interpreter.evm.Context().BlockNumber.Uint64()
 	if upper < 257 {
 		lower = 0
 	} else {
 		lower = upper - 256
 	}
 	if num64 >= lower && num64 < upper {
-		num.SetBytes(interpreter.evm.Context.GetHash(num64).Bytes())
+		num.SetBytes(interpreter.evm.Context().GetHash(num64).Bytes())
 	} else {
 		num.Clear()
 	}
@@ -455,35 +455,35 @@ func opBlockhash(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) (
 }
 
 func opCoinbase(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	scope.Stack.push(new(uint256.Int).SetBytes(interpreter.evm.Context.Coinbase.Bytes()))
+	scope.Stack.push(new(uint256.Int).SetBytes(interpreter.evm.Context().Coinbase.Bytes()))
 	return nil, nil
 }
 
 func opTimestamp(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	scope.Stack.push(new(uint256.Int).SetUint64(interpreter.evm.Context.Time))
+	scope.Stack.push(new(uint256.Int).SetUint64(interpreter.evm.Context().Time))
 	return nil, nil
 }
 
 func opNumber(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.Context.BlockNumber)
+	v, _ := uint256.FromBig(interpreter.evm.Context().BlockNumber)
 	scope.Stack.push(v)
 	return nil, nil
 }
 
 func opDifficulty(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	v, _ := uint256.FromBig(interpreter.evm.Context.Difficulty)
+	v, _ := uint256.FromBig(interpreter.evm.Context().Difficulty)
 	scope.Stack.push(v)
 	return nil, nil
 }
 
 func opRandom(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	v := new(uint256.Int).SetBytes(interpreter.evm.Context.Random.Bytes())
+	v := new(uint256.Int).SetBytes(interpreter.evm.Context().Random.Bytes())
 	scope.Stack.push(v)
 	return nil, nil
 }
 
 func opGasLimit(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]byte, error) {
-	scope.Stack.push(new(uint256.Int).SetUint64(interpreter.evm.Context.GasLimit))
+	scope.Stack.push(new(uint256.Int).SetUint64(interpreter.evm.Context().GasLimit))
 	return nil, nil
 }
 
@@ -824,7 +824,7 @@ func opSelfdestruct(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext
 	balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
 	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
 	interpreter.evm.StateDB.SelfDestruct(scope.Contract.Address())
-	if tracer := interpreter.evm.Config.Tracer; tracer != nil {
+	if tracer := interpreter.evm.Config().Tracer; tracer != nil {
 		tracer.CaptureEnter(SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), []byte{}, 0, balance)
 		tracer.CaptureExit([]byte{}, 0, nil)
 	}
@@ -840,7 +840,7 @@ func opSelfdestruct6780(pc *uint64, interpreter *EVMInterpreter, scope *ScopeCon
 	interpreter.evm.StateDB.SubBalance(scope.Contract.Address(), balance)
 	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes20(), balance)
 	interpreter.evm.StateDB.Selfdestruct6780(scope.Contract.Address())
-	if tracer := interpreter.evm.Config.Tracer; tracer != nil {
+	if tracer := interpreter.evm.Config().Tracer; tracer != nil {
 		tracer.CaptureEnter(SELFDESTRUCT, scope.Contract.Address(), beneficiary.Bytes20(), []byte{}, 0, balance)
 		tracer.CaptureExit([]byte{}, 0, nil)
 	}
@@ -870,7 +870,7 @@ func makeLog(size int) executionFunc {
 			Data:    d,
 			// This is a non-consensus field, but assigned here because
 			// core/state doesn't know the current block number.
-			BlockNumber: interpreter.evm.Context.BlockNumber.Uint64(),
+			BlockNumber: interpreter.evm.Context().BlockNumber.Uint64(),
 		})
 
 		return nil, nil

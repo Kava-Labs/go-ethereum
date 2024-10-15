@@ -989,7 +989,7 @@ func setNodeUserIdent(ctx *cli.Context, cfg *node.Config) {
 // Priority order for bootnodes configuration:
 //
 // 1. --bootnodes flag
-// 2. Config file
+// 2. config file
 // 3. Network preset flags (e.g. --goerli)
 // 4. default to mainnet nodes
 func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {

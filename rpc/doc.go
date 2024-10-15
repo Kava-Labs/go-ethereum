@@ -81,12 +81,12 @@ A method that is considered eligible for notifications must satisfy the followin
 criteria:
 
   - method must be exported
-  - first method argument type must be context.Context
+  - first method argument type must be context.context
   - method must have return types (rpc.Subscription, error)
 
 An example method:
 
-	func (s *BlockChainService) NewBlocks(ctx context.Context) (rpc.Subscription, error) {
+	func (s *BlockChainService) NewBlocks(ctx context.context) (rpc.Subscription, error) {
 		...
 	}
 

@@ -82,11 +82,11 @@ func NewEVMInterpreter(evm *EVM) *EVMInterpreter {
 		table = &frontierInstructionSet
 	}
 	var extraEips []int
-	if len(evm.Config.ExtraEips) > 0 {
+	if len(evm.Config().ExtraEips) > 0 {
 		// Deep-copy jumptable to prevent modification of opcodes in other tables
 		table = copyJumpTable(table)
 	}
-	for _, eip := range evm.Config.ExtraEips {
+	for _, eip := range evm.Config().ExtraEips {
 		if err := EnableEIP(eip, table); err != nil {
 			// Disable it, so caller can check if it's activated or not
 			log.Error("EIP activation failed", "eip", eip, "error", err)
@@ -94,7 +94,7 @@ func NewEVMInterpreter(evm *EVM) *EVMInterpreter {
 			extraEips = append(extraEips, eip)
 		}
 	}
-	evm.Config.ExtraEips = extraEips
+	evm.config.ExtraEips = extraEips
 	return &EVMInterpreter{evm: evm, table: table}
 }
 
@@ -144,7 +144,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		gasCopy uint64 // for EVMLogger to log gas remaining before execution
 		logged  bool   // deferred EVMLogger should ignore already logged steps
 		res     []byte // result of the opcode execution function
-		debug   = in.evm.Config.Tracer != nil
+		debug   = in.evm.Config().Tracer != nil
 	)
 	// Don't move this deferred function, it's placed before the capturestate-deferred method,
 	// so that it get's executed _after_: the capturestate needs the stacks before
@@ -158,9 +158,11 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		defer func() {
 			if err != nil {
 				if !logged {
-					in.evm.Config.Tracer.CaptureState(pcCopy, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
+					in.evm.Config().
+						Tracer.CaptureState(pcCopy, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
 				} else {
-					in.evm.Config.Tracer.CaptureFault(pcCopy, op, gasCopy, cost, callContext, in.evm.depth, err)
+					in.evm.Config().
+						Tracer.CaptureFault(pcCopy, op, gasCopy, cost, callContext, in.evm.depth, err)
 				}
 			}
 		}()
@@ -216,14 +218,16 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 			}
 			// Do tracing before memory expansion
 			if debug {
-				in.evm.Config.Tracer.CaptureState(pc, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
+				in.evm.Config().
+					Tracer.CaptureState(pc, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
 				logged = true
 			}
 			if memorySize > 0 {
 				mem.Resize(memorySize)
 			}
 		} else if debug {
-			in.evm.Config.Tracer.CaptureState(pc, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
+			in.evm.Config().
+				Tracer.CaptureState(pc, op, gasCopy, cost, callContext, in.returnData, in.evm.depth, err)
 			logged = true
 		}
 		// execute the operation

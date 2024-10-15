@@ -189,7 +189,7 @@ func StartClefAccountManager(ksLocation string, nousb, lightKDF bool, scpath str
 	return accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}, backends...)
 }
 
-// MetadataFromContext extracts Metadata from a given context.Context
+// MetadataFromContext extracts Metadata from a given context.context
 func MetadataFromContext(ctx context.Context) Metadata {
 	info := rpc.PeerInfoFromContext(ctx)
 

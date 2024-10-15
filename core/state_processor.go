@@ -73,7 +73,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 	var (
 		context = NewEVMBlockContext(header, p.bc, nil)
-		vmenv   = vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg)
+		vmenv   = vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg, nil)
 		signer  = types.MakeSigner(p.config, header.Number, header.Time)
 	)
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
@@ -137,12 +137,12 @@ func applyTransaction(msg *Message, config *params.ChainConfig, gp *GasPool, sta
 
 	if tx.Type() == types.BlobTxType {
 		receipt.BlobGasUsed = uint64(len(tx.BlobHashes()) * params.BlobTxBlobGasPerBlob)
-		receipt.BlobGasPrice = evm.Context.BlobBaseFee
+		receipt.BlobGasPrice = evm.Context().BlobBaseFee
 	}
 
 	// If the transaction created a contract, store the creation address in the receipt.
 	if msg.To == nil {
-		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext().Origin, tx.Nonce())
 	}
 
 	// Set the receipt logs and create the bloom filter.
@@ -166,7 +166,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	// Create a new context to be used in the EVM environment
 	blockContext := NewEVMBlockContext(header, bc, author)
 	txContext := NewEVMTxContext(msg)
-	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
+	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg, nil)
 	return applyTransaction(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
 }
 

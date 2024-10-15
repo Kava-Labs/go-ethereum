@@ -130,7 +130,7 @@ func TestCreation(t *testing.T) {
 // TestValidation tests that a local peer correctly validates and accepts a remote
 // fork ID.
 func TestValidation(t *testing.T) {
-	// Config that has not timestamp enabled
+	// config that has not timestamp enabled
 	legacyConfig := *params.MainnetChainConfig
 	legacyConfig.ShanghaiTime = nil
 

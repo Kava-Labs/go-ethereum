@@ -75,7 +75,7 @@ var tomlSettings = toml.Config{
 	MissingField: func(rt reflect.Type, field string) error {
 		id := fmt.Sprintf("%s.%s", rt.String(), field)
 		if deprecated(id) {
-			log.Warn("Config field is deprecated and won't have an effect", "name", id)
+			log.Warn("config field is deprecated and won't have an effect", "name", id)
 			return nil
 		}
 		var link string
@@ -306,13 +306,13 @@ func applyMetricConfig(ctx *cli.Context, cfg *gethConfig) {
 
 func deprecated(field string) bool {
 	switch field {
-	case "ethconfig.Config.EVMInterpreter":
+	case "ethconfig.config.EVMInterpreter":
 		return true
-	case "ethconfig.Config.EWASMInterpreter":
+	case "ethconfig.config.EWASMInterpreter":
 		return true
-	case "ethconfig.Config.TrieCleanCacheJournal":
+	case "ethconfig.config.TrieCleanCacheJournal":
 		return true
-	case "ethconfig.Config.TrieCleanCacheRejournal":
+	case "ethconfig.config.TrieCleanCacheRejournal":
 		return true
 	default:
 		return false

@@ -290,9 +290,9 @@ func CheckEnvVars(ctx *cli.Context, flags []cli.Flag, prefix string) {
 		}
 		if flag, ok := known[key]; ok {
 			if ctx.Count(flag) > 0 {
-				log.Info("Config environment variable found", "envvar", key, "shadowedby", "--"+flag)
+				log.Info("config environment variable found", "envvar", key, "shadowedby", "--"+flag)
 			} else {
-				log.Info("Config environment variable found", "envvar", key)
+				log.Info("config environment variable found", "envvar", key)
 			}
 		} else {
 			log.Warn("Unknown config environment variable", "envvar", key)

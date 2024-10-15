@@ -93,13 +93,13 @@ func New(conf *Config) (*Node, error) {
 	// Ensure that the instance name doesn't cause weird conflicts with
 	// other files in the data directory.
 	if strings.ContainsAny(conf.Name, `/\`) {
-		return nil, errors.New(`Config.Name must not contain '/' or '\'`)
+		return nil, errors.New(`config.Name must not contain '/' or '\'`)
 	}
 	if conf.Name == datadirDefaultKeyStore {
-		return nil, errors.New(`Config.Name cannot be "` + datadirDefaultKeyStore + `"`)
+		return nil, errors.New(`config.Name cannot be "` + datadirDefaultKeyStore + `"`)
 	}
 	if strings.HasSuffix(conf.Name, ".ipc") {
-		return nil, errors.New(`Config.Name cannot end in ".ipc"`)
+		return nil, errors.New(`config.Name cannot end in ".ipc"`)
 	}
 	server := rpc.NewServer()
 	server.SetBatchLimits(conf.BatchRequestLimit, conf.BatchResponseMaxSize)

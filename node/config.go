@@ -316,7 +316,7 @@ func (c *Config) name() string {
 	if c.Name == "" {
 		progname := strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
 		if progname == "" {
-			panic("empty executable name, set Config.Name")
+			panic("empty executable name, set config.Name")
 		}
 		return progname
 	}
