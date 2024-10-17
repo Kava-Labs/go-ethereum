@@ -610,6 +610,8 @@ func (evm *EVM) Precompile(addr common.Address) (PrecompiledContract, bool) {
 	return nil, false
 }
 
+// need the method: RunPrecompiledContract(p StatefulPrecompiledContract, addr common.Address, input []byte, suppliedGas uint64, value *big.Int) (ret []byte, remainingGas uint64, err error)
+// have the method: RunPrecompiledContract(_ StatefulPrecompiledContract, addr common.Address, input []byte, suppliedGas uint64, value *big.Int) (ret []byte, remainingGas uint64, err error)
 func (evm *EVM) RunPrecompiledContract(_ StatefulPrecompiledContract, addr common.Address, input []byte, suppliedGas uint64, value *big.Int) (ret []byte, remainingGas uint64, err error) {
 	return nil, 0, nil
 }
